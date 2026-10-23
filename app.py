@@ -28,7 +28,7 @@ def load():
         with open(DB) as f:
             return json.load(f)
     except FileNotFoundError:
-        return {"works": [], "about": "", "film": ""}
+        return {"works": [], "about": "", "film": "", "socials": ""}
 
 
 def save(db):  # ponytail: single JSON file, move to sqlite if works > ~1000
@@ -75,6 +75,7 @@ main{padding:0 40px 60px}
 h1{text-transform:uppercase;font-size:16px;letter-spacing:.2em;margin-bottom:16px}
 .text{max-width:720px;margin:0 auto;white-space:pre-wrap;opacity:.85}
 footer{padding:40px;text-align:center;opacity:.4;font-size:12px}
+footer .soc a{margin:0 10px;text-transform:uppercase}footer .soc{margin-bottom:12px}
 @media(max-width:900px){.grid{grid-template-columns:repeat(2,1fr)}header,main{padding-left:16px;padding-right:16px}}
 @media(max-width:560px){.grid{grid-template-columns:1fr}header{flex-direction:column;gap:12px}nav a{margin:0 12px}}
 /* admin */
@@ -87,7 +88,19 @@ td img{height:48px}td form{display:inline}td button{width:auto;padding:4px 10px}
 """
 
 
-def page(title, body, path=""):
+def socials(db):
+    """One link per line: "Instagram https://instagram.com/x". Label optional."""
+    out = []
+    for line in db.get("socials", "").splitlines():
+        parts = line.split()
+        if parts:
+            url = parts[-1]
+            label = " ".join(parts[:-1]) or re.sub(r"^https?://(www\.)?|/.*$", "", url)
+            out.append(f'<a href="{e(url)}" target="_blank" rel="noopener">{e(label)}</a>')
+    return f'<div class="soc">{"".join(out)}</div>' if out else ""
+
+
+def page(title, body, path="", db=None):
     nav = "".join(f'<a href="{href}" class="{"on" if path == href else ""}">{label}</a>'
                   for _, label, href in CATEGORIES)
     nav += f'<a href="/about" class="{"on" if path == "/about" else ""}">About</a>'
@@ -95,7 +108,7 @@ def page(title, body, path=""):
 <meta name="viewport" content="width=device-width,initial-scale=1"><title>{e(title)}</title>
 <style>{CSS}</style></head><body>
 <header><a class="logo" href="/">{e(SITE_NAME)}</a><nav>{nav}</nav></header>
-<main>{body}</main><footer>&copy; {e(SITE_NAME)}</footer></body></html>""".encode()
+<main>{body}</main><footer>{socials(db or {})}&copy; {e(SITE_NAME)}</footer></body></html>""".encode()
 
 
 def grid(works):
@@ -134,6 +147,7 @@ def admin_page(db, msg=""):
 <h1>Pages</h1>
 <label>Film page text<textarea name="film" rows="10">{e(db["film"])}</textarea></label>
 <label>About page text<textarea name="about" rows="10">{e(db["about"])}</textarea></label>
+<label>Social links in footer, one per line: "Instagram https://instagram.com/you"<textarea name="socials" rows="4">{e(db.get("socials", ""))}</textarea></label>
 <button>Save pages</button></form>
 <script>
 const W={json.dumps({str(w["id"]): w for w in db["works"]})};
@@ -187,12 +201,12 @@ class H(BaseHTTPRequestHandler):
         p, q = u.path, parse_qs(u.query)
         db = load()
         if p == "/" or p == "/main":
-            return self.send(200, page(SITE_NAME, grid(sorted_works(db, "music")), "/"))
+            return self.send(200, page(SITE_NAME, grid(sorted_works(db, "music")), "/", db))
         if p == "/film":
             txt = f'<div class="text" style="margin-bottom:40px">{e(db["film"])}</div>' if db["film"] else ""
-            return self.send(200, page("Film", grid(sorted_works(db, "film")) + txt, "/film"))
+            return self.send(200, page("Film", grid(sorted_works(db, "film")) + txt, "/film", db))
         if p == "/about":
-            return self.send(200, page("About", f'<h1 style="text-align:center">About</h1><div class="text">{e(db["about"])}</div>', "/about"))
+            return self.send(200, page("About", f'<h1 style="text-align:center">About</h1><div class="text">{e(db["about"])}</div>', "/about", db))
         if p.startswith("/work/"):
             w = next((w for w in db["works"] if str(w["id"]) == p[6:]), None)
             if not w:
@@ -200,7 +214,7 @@ class H(BaseHTTPRequestHandler):
             src, _ = embed(w["video"])
             body = (f'<div class="player"><iframe src="{e(src)}" allow="autoplay; fullscreen" allowfullscreen></iframe></div>'
                     f'<h1 style="text-align:center">{e(w["title"])}</h1><div class="text">{e(w.get("credits", ""))}</div>')
-            return self.send(200, page(w["title"], body))
+            return self.send(200, page(w["title"], body, db=db))
         if p.startswith("/uploads/"):
             name = os.path.basename(p)
             try:
@@ -230,7 +244,7 @@ class H(BaseHTTPRequestHandler):
             return self.redirect("/admin?msg=Deleted")
         if self.path == "/admin/pages":
             f = parse_qs(body.decode(), keep_blank_values=True)
-            db["about"], db["film"] = f.get("about", [""])[0], f.get("film", [""])[0]
+            db["about"], db["film"], db["socials"] = (f.get(k, [""])[0] for k in ("about", "film", "socials"))
             save(db)
             return self.redirect("/admin?msg=Pages+saved")
         if self.path == "/admin/work":

@@ -41,6 +41,11 @@ assert "player.vimeo.com/video/265364614" in html and "Director: X" in html
 assert req("GET", "/film")[1].count("ARTIST") == 0
 assert req("POST", "/admin/delete", "id=1", {"Content-Type": "application/x-www-form-urlencoded", **AUTH})[0] == 303
 assert "ARTIST" not in req("GET", "/")[1]
+assert req("POST", "/admin/pages", "about=A&film=F&socials=Instagram+https://instagram.com/x%0Ahttps://vimeo.com/y",
+           {"Content-Type": "application/x-www-form-urlencoded", **AUTH})[0] == 303
+html = req("GET", "/about")[1]
+assert '<a href="https://instagram.com/x" target="_blank" rel="noopener">Instagram</a>' in html, html
+assert '>vimeo.com</a>' in html
 assert app.embed("https://youtu.be/dQw4w9WgXcQ")[0] == "https://www.youtube.com/embed/dQw4w9WgXcQ"
 shutil.rmtree(app.DATA_DIR)
 print("ok")
