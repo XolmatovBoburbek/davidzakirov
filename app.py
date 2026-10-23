@@ -197,10 +197,10 @@ class H(BaseHTTPRequestHandler):
             return False
         auth = self.headers.get("Authorization", "")
         try:
-            user, pw = base64.b64decode(auth.split(" ", 1)[1]).decode().split(":", 1)
+            pw = base64.b64decode(auth.split(" ", 1)[1]).split(b":", 1)[1]
         except Exception:
-            user, pw = "", ""
-        if hmac.compare_digest(pw, ADMIN_PASSWORD):
+            pw = b""
+        if hmac.compare_digest(pw, ADMIN_PASSWORD.encode()):
             return True
         self.send(401, b"auth required", "text/plain", [("WWW-Authenticate", 'Basic realm="admin"')])
         return False

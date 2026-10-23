@@ -2,17 +2,17 @@
 import base64, http.client, os, shutil, tempfile, threading
 from http.server import ThreadingHTTPServer
 
-os.environ["ADMIN_PASSWORD"] = "pw"
+os.environ["ADMIN_PASSWORD"] = "пароль"
 import app
 
 app.DATA_DIR = tempfile.mkdtemp()
 app.UPLOADS = os.path.join(app.DATA_DIR, "uploads"); os.makedirs(app.UPLOADS)
 app.DB = os.path.join(app.DATA_DIR, "site.json")
-app.ADMIN_PASSWORD = "pw"
+app.ADMIN_PASSWORD = "пароль"
 
 srv = ThreadingHTTPServer(("127.0.0.1", 0), app.H)
 threading.Thread(target=srv.serve_forever, daemon=True).start()
-AUTH = {"Authorization": "Basic " + base64.b64encode(b"x:pw").decode()}
+AUTH = {"Authorization": "Basic " + base64.b64encode("x:пароль".encode()).decode()}
 
 
 def req(method, path, body=None, headers=None):
