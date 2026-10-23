@@ -24,7 +24,7 @@ def req(method, path, body=None, headers=None):
 
 B = "----b"
 form = (f"--{B}\r\nContent-Disposition: form-data; name=\"title\"\r\n\r\nARTIST /// SONG\r\n"
-        f"--{B}\r\nContent-Disposition: form-data; name=\"cat\"\r\n\r\nmusic\r\n"
+        f"--{B}\r\nContent-Disposition: form-data; name=\"cat\"\r\n\r\ndirected\r\n"
         f"--{B}\r\nContent-Disposition: form-data; name=\"video\"\r\n\r\nhttps://vimeo.com/265364614\r\n"
         f"--{B}\r\nContent-Disposition: form-data; name=\"credits\"\r\n\r\nDirector: X\r\n"
         f"--{B}\r\nContent-Disposition: form-data; name=\"thumb\"; filename=\"t.png\"\r\nContent-Type: image/png\r\n\r\nPNGDATA\r\n"
@@ -38,10 +38,10 @@ s, html, _ = req("GET", "/")
 assert s == 200 and "ARTIST /// SONG" in html and "/uploads/" in html, html
 s, html, _ = req("GET", "/work/1")
 assert "player.vimeo.com/video/265364614" in html and "Director: X" in html
-assert req("GET", "/film")[1].count("ARTIST") == 0
+assert req("GET", "/edited")[1].count("ARTIST") == 0
 assert req("POST", "/admin/delete", "id=1", {"Content-Type": "application/x-www-form-urlencoded", **AUTH})[0] == 303
 assert "ARTIST" not in req("GET", "/")[1]
-assert req("POST", "/admin/pages", "about=A&film=F&socials=Instagram+https://instagram.com/x%0Ahttps://vimeo.com/y",
+assert req("POST", "/admin/pages", "about=A&socials=Instagram+https://instagram.com/x%0Ahttps://vimeo.com/y",
            {"Content-Type": "application/x-www-form-urlencoded", **AUTH})[0] == 303
 html = req("GET", "/about")[1]
 assert '<a href="https://instagram.com/x" target="_blank" rel="noopener">Instagram</a>' in html, html

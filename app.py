@@ -16,9 +16,10 @@ UPLOADS = os.path.join(DATA_DIR, "uploads")
 DB = os.path.join(DATA_DIR, "site.json")
 ADMIN_PASSWORD = os.environ.get("ADMIN_PASSWORD", "")
 SITE_NAME = os.environ.get("SITE_NAME", "DAVID ZAKIROV")
+SITE_TAGLINE = os.environ.get("SITE_TAGLINE", "Director & Editor")
 MAX_UPLOAD = 20 * 1024 * 1024
 IMG_EXT = {".jpg", ".jpeg", ".png", ".webp", ".gif"}
-CATEGORIES = [("music", "Music Videos", "/"), ("film", "Film", "/film")]
+CATEGORIES = [("directed", "Directed", "/"), ("edited", "Edited", "/edited")]
 
 os.makedirs(UPLOADS, exist_ok=True)
 
@@ -28,7 +29,7 @@ def load():
         with open(DB) as f:
             return json.load(f)
     except FileNotFoundError:
-        return {"works": [], "about": "", "film": "", "socials": ""}
+        return {"works": [], "about": "", "socials": ""}
 
 
 def save(db):  # ponytail: single JSON file, move to sqlite if works > ~1000
@@ -60,7 +61,8 @@ CSS = """
 body{background:#000;color:#fff;font:14px/1.6 Helvetica,Arial,sans-serif;letter-spacing:.08em}
 a{color:#fff;text-decoration:none}
 header{display:flex;justify-content:space-between;align-items:center;padding:28px 40px;text-transform:uppercase}
-header .logo{font-size:18px;font-weight:700;letter-spacing:.2em}
+header .logo{font-size:18px;font-weight:700;letter-spacing:.2em;line-height:1.3}
+header .logo small{display:block;font-size:11px;font-weight:400;letter-spacing:.25em;opacity:.6}
 nav a{margin-left:28px;opacity:.6}nav a.on,nav a:hover{opacity:1}
 main{padding:0 40px 60px}
 .grid{display:grid;grid-template-columns:repeat(3,1fr);gap:4px}
@@ -107,7 +109,7 @@ def page(title, body, path="", db=None):
     return f"""<!doctype html><html lang="en"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1"><title>{e(title)}</title>
 <style>{CSS}</style></head><body>
-<header><a class="logo" href="/">{e(SITE_NAME)}</a><nav>{nav}</nav></header>
+<header><a class="logo" href="/">{e(SITE_NAME)}<small>{e(SITE_TAGLINE)}</small></a><nav>{nav}</nav></header>
 <main>{body}</main><footer>{socials(db or {})}&copy; {e(SITE_NAME)}</footer></body></html>""".encode()
 
 
@@ -145,7 +147,6 @@ def admin_page(db, msg=""):
 <button>Save work</button></form>
 <form class="admin" method="post" action="/admin/pages" style="margin-top:60px">
 <h1>Pages</h1>
-<label>Film page text<textarea name="film" rows="10">{e(db["film"])}</textarea></label>
 <label>About page text<textarea name="about" rows="10">{e(db["about"])}</textarea></label>
 <label>Social links in footer, one per line: "Instagram https://instagram.com/you"<textarea name="socials" rows="4">{e(db.get("socials", ""))}</textarea></label>
 <button>Save pages</button></form>
@@ -200,11 +201,9 @@ class H(BaseHTTPRequestHandler):
         u = urlparse(self.path)
         p, q = u.path, parse_qs(u.query)
         db = load()
-        if p == "/" or p == "/main":
-            return self.send(200, page(SITE_NAME, grid(sorted_works(db, "music")), "/", db))
-        if p == "/film":
-            txt = f'<div class="text" style="margin-bottom:40px">{e(db["film"])}</div>' if db["film"] else ""
-            return self.send(200, page("Film", grid(sorted_works(db, "film")) + txt, "/film", db))
+        for cat, label, href in CATEGORIES:
+            if p == href or (href == "/" and p == "/main"):
+                return self.send(200, page(label, grid(sorted_works(db, cat)), href, db))
         if p == "/about":
             return self.send(200, page("About", f'<h1 style="text-align:center">About</h1><div class="text">{e(db["about"])}</div>', "/about", db))
         if p.startswith("/work/"):
@@ -244,7 +243,7 @@ class H(BaseHTTPRequestHandler):
             return self.redirect("/admin?msg=Deleted")
         if self.path == "/admin/pages":
             f = parse_qs(body.decode(), keep_blank_values=True)
-            db["about"], db["film"], db["socials"] = (f.get(k, [""])[0] for k in ("about", "film", "socials"))
+            db["about"], db["socials"] = (f.get(k, [""])[0] for k in ("about", "socials"))
             save(db)
             return self.redirect("/admin?msg=Pages+saved")
         if self.path == "/admin/work":
@@ -254,7 +253,7 @@ class H(BaseHTTPRequestHandler):
             if w is None:
                 w = {"id": max((x["id"] for x in db["works"]), default=0) + 1}
                 db["works"].append(w)
-            w.update(title=fields.get("title", "").strip(), cat=fields.get("cat", "music"),
+            w.update(title=fields.get("title", "").strip(), cat=fields.get("cat", "directed"),
                      video=fields.get("video", "").strip(), credits=fields.get("credits", ""),
                      sort=int(fields.get("sort") or 0))
             fn, data = files.get("thumb", ("", b""))

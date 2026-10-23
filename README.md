@@ -1,6 +1,6 @@
 # davidzakirov — director portfolio
 
-Public site (Music Videos / Film / About, grid of works, Vimeo/YouTube player per work)
+Public site (Directed / Edited / About, grid of works, Vimeo/YouTube player per work)
 plus a private admin at `/admin` for uploading works. Python stdlib only, no dependencies.
 
 ## Run
@@ -22,9 +22,10 @@ All content lives in `data/` (`site.json` + `uploads/`). Back that folder up.
 
 ## Admin
 
-- Add a work: title, category (Music Videos / Film), Vimeo or YouTube link, optional thumbnail, credits, sort order.
+- Add a work: title, category (Directed / Edited), Vimeo or YouTube link, optional thumbnail, credits, sort order.
 - Thumbnail is pulled from the video automatically if you don't upload one.
-- Edit the About and Film page texts.
+- Edit the About text and footer social links.
+- Name and tagline in the header: `SITE_NAME`, `SITE_TAGLINE` env vars.
 
 Put it behind HTTPS (nginx/Caddy) in production: Basic Auth sends the password in the clear otherwise.
 
