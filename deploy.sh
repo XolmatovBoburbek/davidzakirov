@@ -13,7 +13,7 @@ cd "$DIR"
 
 if [ ! -f .env ]; then
   read -rsp "Admin password: " PW </dev/tty; echo
-  printf 'ADMIN_PASSWORD=%s\nPORT=%s\nSITE_NAME=DAVID ZAKIROV\nSITE_TAGLINE=Director & Editor\n' "$PW" "$PORT" > .env
+  printf 'ADMIN_PASSWORD=%q\nPORT=%q\nSITE_NAME=%q\nSITE_TAGLINE=%q\n' "$PW" "$PORT" "DAVID ZAKIROV" "Director & Editor" > .env
   chmod 600 .env
 fi
 
