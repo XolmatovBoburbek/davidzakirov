@@ -48,11 +48,17 @@ assert "player.vimeo.com/video/265364614" in html and "Director: X" in html
 assert req("GET", "/edited")[1].count("ARTIST") == 0
 assert req("POST", "/admin/delete", "id=1", {"Content-Type": "application/x-www-form-urlencoded", **AUTH})[0] == 303
 assert "ARTIST" not in req("GET", "/")[1]
-assert req("POST", "/admin/pages", "about=A&socials=Instagram+https://instagram.com/x%0Ahttps://vimeo.com/y",
+assert req("POST", "/admin/pages", "about=A&socials=Instagram+https://instagram.com/x%0Ahttps://vimeo.com/y&contacts=David+%2B998900002998%0Azakirovdirector%40gmail.com%0ATelegram+%40destonoff",
            {"Content-Type": "application/x-www-form-urlencoded", **AUTH})[0] == 303
 html = req("GET", "/about")[1]
 assert '<a href="https://instagram.com/x" target="_blank" rel="noopener">Instagram</a>' in html, html
 assert '>vimeo.com</a>' in html
+assert 'href="mailto:zakirovdirector@gmail.com"' in html and 'href="tel:+998900002998"' in html and 'href="https://t.me/destonoff"' in html, html
+# photo work: no video, image only
+photo = form.replace(b"https://vimeo.com/265364614", b"").replace(b"\r\n\r\ndirected\r\n", b"\r\n\r\nphoto\r\n")
+assert req("POST", "/admin/work", photo, MP)[0] == 303
+html = req("GET", "/photo")[1]; assert "ARTIST /// SONG" in html, html
+html = req("GET", "/work/1")[1]; assert '<img class="photo"' in html and "<iframe" not in html, html
 assert app.embed("https://youtu.be/dQw4w9WgXcQ")[0] == "https://www.youtube.com/embed/dQw4w9WgXcQ"
 shutil.rmtree(app.DATA_DIR)
 print("ok")

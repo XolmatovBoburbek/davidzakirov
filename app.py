@@ -24,10 +24,12 @@ UPLOADS = os.path.join(DATA_DIR, "uploads")
 DB = os.path.join(DATA_DIR, "site.json")
 ADMIN_PASSWORD = os.environ.get("ADMIN_PASSWORD", "")
 SITE_NAME = os.environ.get("SITE_NAME", "DAVID ZAKIROV")
-SITE_TAGLINE = os.environ.get("SITE_TAGLINE", "Director & Editor")
+SITE_TAGLINE = os.environ.get("SITE_TAGLINE", "Director")
 MAX_UPLOAD = 20 * 1024 * 1024
 IMG_EXT = {".jpg", ".jpeg", ".png", ".webp", ".gif"}
-CATEGORIES = [("directed", "Directed", "/"), ("edited", "Edited", "/edited")]
+CATEGORIES = [("directed", "Directed", "/"), ("edited", "Edited", "/edited"), ("photo", "Photo", "/photo")]
+DEFAULT_SOCIALS = "Instagram https://www.instagram.com/destonoff"
+DEFAULT_CONTACTS = "David Zakirov +998900002998\nzakirovdirector@gmail.com\nTelegram @destonoff"
 
 os.makedirs(UPLOADS, exist_ok=True)
 
@@ -37,7 +39,7 @@ def load():
         with open(DB) as f:
             return json.load(f)
     except FileNotFoundError:
-        return {"works": [], "about": "", "socials": ""}
+        return {"works": [], "about": "", "socials": DEFAULT_SOCIALS, "contacts": DEFAULT_CONTACTS}
 
 
 def save(db):  # ponytail: single JSON file, move to sqlite if works > ~1000
@@ -59,41 +61,43 @@ def embed(url):
 
 
 def thumb(w):
-    return w.get("thumb") or embed(w["video"])[1]
+    return w.get("thumb") or embed(w.get("video", ""))[1]
 
 
 e = html.escape
 
 CSS = """
 *{box-sizing:border-box;margin:0;padding:0}
-body{background:#000;color:#fff;font:14px/1.6 Helvetica,Arial,sans-serif;letter-spacing:.08em}
-a{color:#fff;text-decoration:none}
+body{background:#fff;color:#000;font:14px/1.6 "Helvetica Neue",Helvetica,Arial,sans-serif;letter-spacing:.08em}
+a{color:inherit;text-decoration:none}
 header{display:flex;justify-content:space-between;align-items:center;padding:28px 40px;text-transform:uppercase}
-header .logo{font-size:18px;font-weight:700;letter-spacing:.2em;line-height:1.3}
-header .logo small{display:block;font-size:11px;font-weight:400;letter-spacing:.25em;opacity:.6}
-nav a{margin-left:28px;opacity:.6}nav a.on,nav a:hover{opacity:1}
+header .logo{font-size:18px;font-weight:700;letter-spacing:.2em;line-height:1.3;color:#000}
+header .logo small{display:block;font-size:11px;font-weight:300;letter-spacing:.25em;color:#777}
+nav a{margin-left:28px;font-weight:300;color:#999;text-transform:lowercase;letter-spacing:.15em}nav a.on,nav a:hover{color:#000}
 main{padding:0 40px 60px}
 .grid{display:grid;grid-template-columns:repeat(3,1fr);gap:4px}
-.grid a{position:relative;display:block;aspect-ratio:16/9;overflow:hidden;background:#111}
+.grid a{position:relative;display:block;aspect-ratio:16/9;overflow:hidden;background:#f2f2f2}
 .grid img{width:100%;height:100%;object-fit:cover;transition:transform .5s,opacity .3s}
-.grid a:hover img{transform:scale(1.04);opacity:.35}
+.grid a:hover img{transform:scale(1.04);opacity:.25}
 .grid span{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;text-align:center;
  padding:16px;text-transform:uppercase;font-weight:700;opacity:0;transition:opacity .3s}
 .grid a:hover span{opacity:1}
-.player{aspect-ratio:16/9;width:100%;max-width:1200px;margin:0 auto 32px;background:#111}
+.player{aspect-ratio:16/9;width:100%;max-width:1200px;margin:0 auto 32px;background:#f2f2f2}
 .player iframe{width:100%;height:100%;border:0}
+.photo{display:block;max-width:1200px;width:100%;margin:0 auto 32px}
 h1{text-transform:uppercase;font-size:16px;letter-spacing:.2em;margin-bottom:16px}
-.text{max-width:720px;margin:0 auto;white-space:pre-wrap;opacity:.85}
-footer{padding:40px;text-align:center;opacity:.4;font-size:12px}
-footer .soc a{margin:0 10px;text-transform:uppercase}footer .soc{margin-bottom:12px}
+.text{max-width:720px;margin:0 auto;white-space:pre-wrap;color:#333}
+footer{padding:60px 40px 40px;text-align:center;font-size:12px;font-weight:300;color:#777;letter-spacing:.15em}
+footer .soc{margin-bottom:24px}footer .soc a{margin:0 10px;text-transform:uppercase;color:#000;font-weight:400}
+footer .contacts{white-space:pre-wrap;margin-bottom:24px;line-height:2}footer .contacts a:hover{color:#000}
 @media(max-width:900px){.grid{grid-template-columns:repeat(2,1fr)}header,main{padding-left:16px;padding-right:16px}}
-@media(max-width:560px){.grid{grid-template-columns:1fr}header{flex-direction:column;gap:12px}nav a{margin:0 12px}}
+@media(max-width:560px){.grid{grid-template-columns:1fr}header{flex-direction:column;gap:12px}nav a{margin:0 10px}}
 /* admin */
 form.admin{max-width:720px;margin:0 auto;display:grid;gap:10px}
-input,textarea,select,button{font:inherit;padding:8px;background:#111;color:#fff;border:1px solid #333;width:100%}
-button{cursor:pointer;background:#fff;color:#000;font-weight:700;text-transform:uppercase}
+input,textarea,select,button{font:inherit;padding:8px;background:#fff;color:#000;border:1px solid #ccc;width:100%}
+button{cursor:pointer;background:#000;color:#fff;font-weight:700;text-transform:uppercase;border-color:#000}
 table{width:100%;max-width:1000px;margin:0 auto 40px;border-collapse:collapse}
-td{padding:8px;border-bottom:1px solid #222;vertical-align:middle}
+td{padding:8px;border-bottom:1px solid #eee;vertical-align:middle}
 td img{height:48px}td form{display:inline}td button{width:auto;padding:4px 10px}
 """
 
@@ -110,6 +114,15 @@ def socials(db):
     return f'<div class="soc">{"".join(out)}</div>' if out else ""
 
 
+def contacts(db):
+    """Plain lines; emails, phones and @handles become links."""
+    txt = e(db.get("contacts", ""))
+    txt = re.sub(r"[\w.+-]+@[\w-]+\.[\w.]+", lambda m: f'<a href="mailto:{m[0]}">{m[0]}</a>', txt)
+    txt = re.sub(r"\+\d{7,15}", lambda m: f'<a href="tel:{m[0]}">{m[0]}</a>', txt)
+    txt = re.sub(r"(?<![\w/])@(\w{3,})", lambda m: f'<a href="https://t.me/{m[1]}" target="_blank" rel="noopener">@{m[1]}</a>', txt)
+    return f'<div class="contacts">{txt}</div>' if txt else ""
+
+
 def page(title, body, path="", db=None):
     nav = "".join(f'<a href="{href}" class="{"on" if path == href else ""}">{label}</a>'
                   for _, label, href in CATEGORIES)
@@ -118,7 +131,7 @@ def page(title, body, path="", db=None):
 <meta name="viewport" content="width=device-width,initial-scale=1"><title>{e(title)}</title>
 <style>{CSS}</style></head><body>
 <header><a class="logo" href="/">{e(SITE_NAME)}<small>{e(SITE_TAGLINE)}</small></a><nav>{nav}</nav></header>
-<main>{body}</main><footer>{socials(db or {})}&copy; {e(SITE_NAME)}</footer></body></html>""".encode()
+<main>{body}</main><footer>{socials(db or {})}{contacts(db or {})}&copy; {e(SITE_NAME)}</footer></body></html>""".encode()
 
 
 def grid(works):
@@ -149,15 +162,16 @@ def admin_page(db, msg=""):
 <input type="hidden" name="id" id="f-id">
 <input name="title" id="f-title" placeholder="Title, e.g. ARTIST /// SONG" required>
 <select name="cat" id="f-cat">{opts}</select>
-<input name="video" id="f-video" placeholder="Vimeo or YouTube link" required>
+<input name="video" id="f-video" placeholder="Vimeo or YouTube link (empty for photo)">
 <input name="sort" id="f-sort" type="number" value="0" title="Lower = earlier">
-<label>Thumbnail (optional, auto from video if empty) <input type="file" name="thumb" accept="image/*"></label>
+<label>Image / thumbnail (auto from video if empty) <input type="file" name="thumb" accept="image/*"></label>
 <textarea name="credits" id="f-credits" rows="8" placeholder="Credits"></textarea>
 <button>Save work</button></form>
 <form class="admin" method="post" action="/admin/pages" style="margin-top:60px">
 <h1>Pages</h1>
 <label>About page text<textarea name="about" rows="10">{e(db["about"])}</textarea></label>
-<label>Social links in footer, one per line: "Instagram https://instagram.com/you"<textarea name="socials" rows="4">{e(db.get("socials", ""))}</textarea></label>
+<label>Social links in footer, one per line: "Instagram https://instagram.com/you"<textarea name="socials" rows="3">{e(db.get("socials", ""))}</textarea></label>
+<label>Contacts in footer, one per line<textarea name="contacts" rows="4">{e(db.get("contacts", ""))}</textarea></label>
 <button>Save pages</button></form>
 <script>
 const W={json.dumps({str(w["id"]): w for w in db["works"]})};
@@ -219,8 +233,10 @@ class H(BaseHTTPRequestHandler):
             w = next((w for w in db["works"] if str(w["id"]) == p[6:]), None)
             if not w:
                 return self.send(404, page("404", '<p class="text">Not found</p>'))
-            src, _ = embed(w["video"])
-            body = (f'<div class="player"><iframe src="{e(src)}" allow="autoplay; fullscreen" allowfullscreen></iframe></div>'
+            src, _ = embed(w.get("video", ""))
+            media = (f'<div class="player"><iframe src="{e(src)}" allow="autoplay; fullscreen" allowfullscreen></iframe></div>'
+                     if w.get("video") else f'<img class="photo" src="{e(thumb(w))}" alt="{e(w["title"])}">')
+            body = (media +
                     f'<h1 style="text-align:center">{e(w["title"])}</h1><div class="text">{e(w.get("credits", ""))}</div>')
             return self.send(200, page(w["title"], body, db=db))
         if p.startswith("/uploads/"):
@@ -261,7 +277,7 @@ class H(BaseHTTPRequestHandler):
             return self.redirect("/admin?msg=Deleted")
         if self.path == "/admin/pages":
             f = parse_qs(body.decode(), keep_blank_values=True)
-            db["about"], db["socials"] = (f.get(k, [""])[0] for k in ("about", "socials"))
+            db["about"], db["socials"], db["contacts"] = (f.get(k, [""])[0] for k in ("about", "socials", "contacts"))
             save(db)
             return self.redirect("/admin?msg=Pages+saved")
         if self.path == "/admin/work":
