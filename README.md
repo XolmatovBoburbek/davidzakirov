@@ -8,7 +8,7 @@ plus a private admin at `/admin` for uploading works. Python stdlib only, no dep
 ```sh
 ADMIN_PASSWORD=change-me SITE_NAME="DAVID ZAKIROV" python3 app.py
 # site:  http://localhost:8000
-# admin: http://localhost:8000/admin   (any username, password = ADMIN_PASSWORD)
+# admin: http://localhost:8000/admin   (password = ADMIN_PASSWORD)
 ```
 
 Docker:
@@ -27,7 +27,7 @@ All content lives in `data/` (`site.json` + `uploads/`). Back that folder up.
 - Edit the About text and footer social links.
 - Name and tagline in the header: `SITE_NAME`, `SITE_TAGLINE` env vars.
 
-Put it behind HTTPS (nginx/Caddy) in production: Basic Auth sends the password in the clear otherwise.
+Put it behind HTTPS (nginx/Caddy) in production so the admin password is not sent in the clear.
 
 ## Test
 

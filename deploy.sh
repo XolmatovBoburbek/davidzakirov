@@ -37,4 +37,4 @@ else
   echo "site:  http://$(curl -s -4 ifconfig.me || hostname -I | awk '{print $1}'):$PORT"
 fi
 echo "admin: same URL + /admin"
-sleep 1; curl -s -o /dev/null -w "admin check: HTTP %{http_code} (401 = ok, password required)\n" "http://127.0.0.1:$PORT/admin"
+sleep 1; curl -s -o /dev/null -w "admin check: HTTP %{http_code} (200 = ok)\n" "http://127.0.0.1:$PORT/admin"

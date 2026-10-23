@@ -4,7 +4,7 @@
 Run:  ADMIN_PASSWORD=secret python3 app.py   (port 8000, override with PORT)
 Data: data/site.json, uploads in data/uploads/
 """
-import base64, hmac, html, json, os, re, sys, uuid
+import hmac, html, json, os, re, sys, uuid
 from email import policy
 from email.parser import BytesParser
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
@@ -142,6 +142,7 @@ def admin_page(db, msg=""):
                    for w in sorted(db["works"], key=lambda w: (w["cat"], w.get("sort", 0), -w["id"])))
     return f"""{f'<p class="text" style="text-align:center;color:#8f8">{e(msg)}</p>' if msg else ''}
 <h1 style="text-align:center">Works</h1>
+<form method="post" action="/admin/logout" style="text-align:center;margin-bottom:20px"><button style="width:auto">Log out</button></form>
 <table>{rows}</table>
 <form class="admin" method="post" action="/admin/work" enctype="multipart/form-data" id="wf">
 <h1>Add / edit work</h1>
@@ -191,18 +192,18 @@ class H(BaseHTTPRequestHandler):
     def redirect(self, to):
         self.send(303, b"", extra=[("Location", to)])
 
+    def token(self):
+        return hmac.new(ADMIN_PASSWORD.encode(), b"admin-session", "sha256").hexdigest()
+
     def authed(self):
         if not ADMIN_PASSWORD:
-            self.send(503, page("Admin", '<p class="text">Set ADMIN_PASSWORD env var to enable admin.</p>'))
+            self.send(503, page("Admin", '<p class="text">Set ADMIN_PASSWORD in .env to enable admin.</p>'))
             return False
-        auth = self.headers.get("Authorization", "")
-        try:
-            pw = base64.b64decode(auth.split(" ", 1)[1]).split(b":", 1)[1]
-        except Exception:
-            pw = b""
-        if hmac.compare_digest(pw, ADMIN_PASSWORD.encode()):
+        cookie = dict(c.strip().split("=", 1) for c in self.headers.get("Cookie", "").split(";") if "=" in c)
+        if hmac.compare_digest(cookie.get("adm", ""), self.token()):
             return True
-        self.send(401, b"auth required", "text/plain", [("WWW-Authenticate", 'Basic realm="admin"')])
+        self.send(200, page("Login", '''<form class="admin" method="post" action="/admin/login"><h1>Admin login</h1>
+<input type="password" name="password" placeholder="Password" autofocus required><button>Log in</button></form>'''))
         return False
 
     def do_GET(self):
@@ -237,6 +238,15 @@ class H(BaseHTTPRequestHandler):
         self.send(404, page("404", '<p class="text">Not found</p>'))
 
     def do_POST(self):
+        if self.path == "/admin/login":
+            body = self.rfile.read(int(self.headers.get("Content-Length", 0)))
+            pw = parse_qs(body.decode("utf-8", "replace")).get("password", [""])[0]
+            if ADMIN_PASSWORD and hmac.compare_digest(pw.encode(), ADMIN_PASSWORD.encode()):
+                return self.send(303, b"", extra=[("Location", "/admin"),
+                                                  ("Set-Cookie", f"adm={self.token()}; Path=/; HttpOnly; SameSite=Lax; Max-Age=2592000")])
+            return self.redirect("/admin")
+        if self.path == "/admin/logout":
+            return self.send(303, b"", extra=[("Location", "/"), ("Set-Cookie", "adm=; Path=/; Max-Age=0")])
         if not self.path.startswith("/admin/") or not self.authed():
             return
         n = int(self.headers.get("Content-Length", 0))

@@ -1,5 +1,5 @@
 """Smoke test: add a work via admin, see it on the front, delete it. Run: python3 test_app.py"""
-import base64, http.client, os, shutil, tempfile, threading
+import http.client, os, shutil, tempfile, threading
 from http.server import ThreadingHTTPServer
 
 os.environ["ADMIN_PASSWORD"] = "пароль"
@@ -12,7 +12,13 @@ app.ADMIN_PASSWORD = "пароль"
 
 srv = ThreadingHTTPServer(("127.0.0.1", 0), app.H)
 threading.Thread(target=srv.serve_forever, daemon=True).start()
-AUTH = {"Authorization": "Basic " + base64.b64encode("x:пароль".encode()).decode()}
+def login():
+    c = http.client.HTTPConnection("127.0.0.1", srv.server_port)
+    c.request("POST", "/admin/login", "password=%D0%BF%D0%B0%D1%80%D0%BE%D0%BB%D1%8C", {"Content-Type": "application/x-www-form-urlencoded"})
+    r = c.getresponse(); r.read()
+    assert r.status == 303 and r.getheader("Location") == "/admin"
+    return {"Cookie": r.getheader("Set-Cookie").split(";")[0]}
+AUTH = login()
 
 
 def req(method, path, body=None, headers=None):
@@ -31,8 +37,9 @@ form = (f"--{B}\r\nContent-Disposition: form-data; name=\"title\"\r\n\r\nARTIST 
         f"--{B}--\r\n").encode()
 MP = {"Content-Type": f"multipart/form-data; boundary={B}", **AUTH}
 
-assert req("GET", "/admin")[0] == 401
-assert req("GET", "/admin", headers=AUTH)[0] == 200
+assert "Admin login" in req("GET", "/admin")[1]
+assert req("POST", "/admin/login", "password=wrong", {"Content-Type": "application/x-www-form-urlencoded"})[2]["Location"] == "/admin"
+assert "Add / edit work" in req("GET", "/admin", headers=AUTH)[1]
 assert req("POST", "/admin/work", form, MP)[0] == 303
 s, html, _ = req("GET", "/")
 assert s == 200 and "ARTIST /// SONG" in html and "/uploads/" in html, html
