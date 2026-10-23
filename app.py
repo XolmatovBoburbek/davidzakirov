@@ -11,6 +11,14 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from urllib.parse import parse_qs, urlparse
 
 ROOT = os.path.dirname(os.path.abspath(__file__))
+try:  # ponytail: .env = plain KEY=VALUE lines, no quoting; env vars still win
+    with open(os.path.join(ROOT, ".env")) as _f:
+        for _l in _f:
+            if "=" in _l and not _l.startswith("#"):
+                _k, _v = _l.rstrip("\n").split("=", 1)
+                os.environ.setdefault(_k.strip(), _v)
+except FileNotFoundError:
+    pass
 DATA_DIR = os.path.join(ROOT, "data")
 UPLOADS = os.path.join(DATA_DIR, "uploads")
 DB = os.path.join(DATA_DIR, "site.json")

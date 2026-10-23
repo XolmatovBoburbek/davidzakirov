@@ -13,13 +13,12 @@ cd "$DIR"
 
 if [ ! -f .env ]; then
   read -rsp "Admin password: " PW </dev/tty; echo
-  printf 'ADMIN_PASSWORD=%q\nPORT=%q\nSITE_NAME=%q\nSITE_TAGLINE=%q\n' "$PW" "$PORT" "DAVID ZAKIROV" "Director & Editor" > .env
+  printf 'ADMIN_PASSWORD=%s\nPORT=%s\nSITE_NAME=DAVID ZAKIROV\nSITE_TAGLINE=Director & Editor\n' "$PW" "$PORT" > .env
   chmod 600 .env
 fi
 
-set -a; . ./.env; set +a
 pm2 delete davidzakirov >/dev/null 2>&1 || true
-pm2 start app.py --name davidzakirov --interpreter python3 --update-env
+pm2 start app.py --name davidzakirov --interpreter python3
 pm2 save >/dev/null
 if [ -n "${DOMAIN:-}" ] && command -v nginx >/dev/null; then
   cat > /etc/nginx/sites-available/davidzakirov <<CONF
@@ -38,3 +37,4 @@ else
   echo "site:  http://$(curl -s -4 ifconfig.me || hostname -I | awk '{print $1}'):$PORT"
 fi
 echo "admin: same URL + /admin"
+sleep 1; curl -s -o /dev/null -w "admin check: HTTP %{http_code} (401 = ok, password required)\n" "http://127.0.0.1:$PORT/admin"
