@@ -34,3 +34,14 @@ Put it behind HTTPS (nginx/Caddy) in production: Basic Auth sends the password i
 ```sh
 python3 test_app.py
 ```
+
+## Deploy on the VPS
+
+Over SSH as root:
+
+```sh
+curl -fsSL https://raw.githubusercontent.com/XolmatovBoburbek/davidzakirov/main/deploy.sh | bash
+```
+
+Asks for the admin password once (stored in `/root/davidzakirov/.env`), runs the site under PM2 on port 8010.
+Re-run the same command to pull updates. Logs: `pm2 logs davidzakirov`.
