@@ -44,4 +44,5 @@ curl -fsSL https://raw.githubusercontent.com/XolmatovBoburbek/davidzakirov/main/
 ```
 
 Asks for the admin password once (stored in `/root/davidzakirov/.env`), runs the site under PM2 on port 8010.
+With a domain pointed at the server, add `DOMAIN=portfolio.example.com` before `bash` to get nginx + HTTPS.
 Re-run the same command to pull updates. Logs: `pm2 logs davidzakirov`.
